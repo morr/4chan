@@ -27,7 +27,7 @@ sections = %w(a
               s
               u
               w)
-img_regex = /<span class="filesize">File(?: : |)<a href="([^"]+)" target="_blank">([^<]+)<\/a>-\([\d.]+ .., (\d+x\d+)\)<\/span>/#<br><a href="([^"]+)" target=_blank>/#<img src=http://1.thumbs.4chan.org/w/thumb/1279393057447s.jpg border=0 align=left width=251 height=189 hspace=20 alt="981 KB" md5="gmvBwSW+XGwc/7Hu7caRlQ==">/
+img_regex = /<span class="filesize">File(?: : |)<a href="([^"]+)" target="_blank">([^<]+)<\/a>-\([\d.]+ .., (\d+)x(\d+)\)<\/span>/#<br><a href="([^"]+)" target=_blank>/#<img src=http://1.thumbs.4chan.org/w/thumb/1279393057447s.jpg border=0 align=left width=251 height=189 hspace=20 alt="981 KB" md5="gmvBwSW+XGwc/7Hu7caRlQ==">/
 
 sections.each do |section|
   Dir.mkdir(path+section) unless File.exists?(path+section)
@@ -53,12 +53,18 @@ while 1
             match = line.match(img_regex)
             img[:url] = match[1]
             img[:name] = match[2]
-            img[:size] = match[3]
+            img[:size] = "%sx%s" % [match[3], match[4]]
             img[:dir] = "%s%s" % [path, section, img[:size]]
             img[:path] = "%s/%s_%s" % [img[:dir], img[:size], img[:name]]
             img[:h] = nil
 
             next if cache.include?(img[:name])
+            # do not download small images
+            if match[3].to_i < 1280
+              cache << img[:name]
+              downloaded = downloaded + 1
+              next
+            end
             begin
               Dir.mkdir(img[:dir]) unless File.exists?(img[:dir])
               puts "downloading %s [%s]" % [img[:url], img[:size]]
