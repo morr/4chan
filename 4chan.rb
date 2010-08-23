@@ -24,7 +24,6 @@ base_url = 'http://boards.4chan.org/'
 sections = %w(a
               c
               e
-              s
               u
               w)
 img_regex = /<span class="filesize">File(?: : |)<a href="([^"]+)" target="_blank">([^<]+)<\/a>-\([\d.]+ .., (\d+)x(\d+)\)<\/span>/#<br><a href="([^"]+)" target=_blank>/#<img src=http://1.thumbs.4chan.org/w/thumb/1279393057447s.jpg border=0 align=left width=251 height=189 hspace=20 alt="981 KB" md5="gmvBwSW+XGwc/7Hu7caRlQ==">/
@@ -91,5 +90,6 @@ while 1
     end # threads
   end # each
   threads.each { |aThread| aThread.join }
+  puts "%s done" % Time.new.strftime("%Y-%m-%d %H:%M:%S")
   sleep(60*60*2)
 end # while
