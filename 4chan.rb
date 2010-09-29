@@ -43,7 +43,7 @@ while 1
           page_url = base_url+section+"/"+i.to_s
           puts "downloading %s" % page_url
 
-          downloaded = 0
+          #downloaded = 0
           content = nil
           open(page_url) {|h| content = h.read }
           # parsing page content
@@ -61,7 +61,7 @@ while 1
             # do not download small images
             if match[3].to_i < 1280
               cache << img[:name]
-              downloaded = downloaded + 1
+              #downloaded = downloaded + 1
               next
             end
             begin
@@ -78,9 +78,9 @@ while 1
               puts e.message
               raise Interrupt.new if e.class == Interrupt
             end # rescue
-            downloaded = downloaded + 1
+            #downloaded = downloaded + 1
           end # gsub
-          break if downloaded == 0
+          #break if downloaded == 0
 
         rescue Exception => e
           exit if e.class == Interrupt
@@ -91,5 +91,5 @@ while 1
   end # each
   threads.each { |aThread| aThread.join }
   puts "%s done" % Time.new.strftime("%Y-%m-%d %H:%M:%S")
-  sleep(60*60*2)
+  sleep(60*60*0.5)
 end # while
