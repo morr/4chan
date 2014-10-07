@@ -1,7 +1,9 @@
-#!/usr/bin/ruby
+##!/usr/bin/ruby
 require 'pp'
 require 'open-uri'
 require 'thread'
+require 'nokogiri'
+require 'pry'
 
 def load_cache(path)
   cache = nil
@@ -19,53 +21,49 @@ def save_cache(path, cache)
 end
 
 
-path = '/home/wallpapers/4chan/'
+path = '/tmp/4chan/'
 base_url = 'http://boards.4chan.org/'
-#sections = %w(c
-              #e
-              #u
-              #w)
-sections = %w(w
-              a
-              c
-              e
-              u)
-img_regex = /<span class="fileText".*?>File(?: ?: |)<a href="([^"]+)" target="_blank">([^<]+)<\/a>-\([\d.]+ .., (\d+)x(\d+)/
+#sections = %w(c e u w)
+#sections = %w(w a c e u)
+sections = %w(w)
 
+Dir.mkdir path unless File.exists? path
 sections.each do |section|
-  Dir.mkdir(path+section) unless File.exists?(path+section)
+  Dir.mkdir path+section unless File.exists? path+section
 end
 
-while 1
-  threads = []
+while true
   cache = load_cache('%s/.4chan.yaml' % ENV['HOME'])
   sections.each do |section|
-    16.times do |i|
+    10.times do |i|
       begin
-        page_url = base_url+section+"/"+i.to_s
-        puts "downloading %s" % page_url
+        page_url = "#{base_url}#{section}/#{i}"
+        puts "downloading #{page_url}"
 
         content = open(page_url).read
-        # parsing page content
-        content.gsub(img_regex) do |line|
+        doc = Nokogiri::HTML(content)
+        files = doc.css('.file')
+
+        files.each do |file_node|
           img = {}
-          match = line.match(img_regex)
-          img[:url] = match[1].sub(/^\/\//, 'http://')
-          img[:name] = match[2]
-          img[:size] = "%sx%s" % [match[3], match[4]]
-          img[:dir] = "%s%s" % [path, section, img[:size]]
-          img[:path] = "%s/%s_%s" % [img[:dir], img[:size], img[:name]]
-          img[:h] = nil
-          next if cache.include?(img[:name])
+
+          img[:url] = file_node.css('.fileThumb').first.attr('href').sub(/^\/\//, 'http://')
+          img[:name] = file_node.css('.fileText a').first.text
+          img[:sizes] = file_node.css('.fileText').text =~ / (?<sizes>\d+x\d+)\)/ && $~[:sizes]
+          img[:dir] = "#{path}#{section}"
+          img[:path] = "#{img[:dir]}/#{img[:sizes]}_#{img[:name]}"
+
+          next if cache.include? img[:name]
+
           # do not download small images
-          if match[3].to_i < 1600
+          if img[:sizes].split('x').first.to_i < 1600
             cache << img[:name]
             #downloaded = downloaded + 1
             next
           end
           begin
             Dir.mkdir(img[:dir]) unless File.exists?(img[:dir])
-            puts "downloading %s [%s]" % [img[:url], img[:size]]
+            puts "downloading %s [%s]" % [img[:url], img[:sizes]]
             open(img[:url]) do |h|
               File.open(img[:path], "w") {|file| file.write(h.read) }
             end
